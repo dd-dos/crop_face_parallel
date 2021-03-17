@@ -70,7 +70,11 @@ def main_process(input_dir, output_dir):
     
     pool = Pool(multiprocessing.cpu_count())
     pool.map(func=task, iterable=glob.glob(folder_search_path))
+    pool.close()
     
 
 if __name__=="__main__":
-    main_process("./CelebA_sample", "./crop_faces_liveness")
+    os.makedirs("./cropped_face", exist_ok=True)
+    for img_folder in tqdm.tqdm(glob.glob("./hello/sub_folder_*[!.tar.gz]"))
+        out_path = os.path.join("./cropped_face", img_folder.split("/")[-1])
+        main_process(img_folder, out_path)
