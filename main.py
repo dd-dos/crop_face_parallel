@@ -5,10 +5,12 @@ import numpy as np
 import shutil
 from multiprocessing import Pool
 import multiprocessing
+import torch
 
 from PIL import Image
 from retinaface.retina_detector import RetinaDetector
 import time
+import torch
 
 def custom_crop(img, bbox, ratio=1/3):
     width, height = img.size
@@ -30,7 +32,7 @@ def miles_crop(img, bbox):
     return img.crop((x1,y1,x2,y2))
 
 
-def crop_img(input_dir, output_dir, detector):
+def crop_img(input_dir, output_dir, detector, folder_id):
     img_search_path = os.path.join(input_dir, "*.jpg")
     for idx, img_file in enumerate(glob.glob(img_search_path)):
         img = Image.open(img_file)
@@ -40,26 +42,28 @@ def crop_img(input_dir, output_dir, detector):
                 magic_list = [1/4, 1/14]
                 for magic_id, magic in enumerate(magic_list):
                     img_crop = custom_crop(img, bbox, ratio=magic)
-                    img_name = input_dir.split("/")[-1] + '_{}.{}.{}.jpg'.format(idx, box_id, magic_id)
+                    img_name = input_dir.split("/")[-1] + '_{}.{}.{}.{}.jpg'.format(folder_id, idx, box_id, magic_id)
                     img_save_path = os.path.join(output_dir, img_name)
                     img_crop.save(img_save_path)
 
 
-def task(img_folder):
-    output_dir = "./crop_faces_liveness"
-    detector = RetinaDetector(device='cpu', 
-                            path_to_detector="/home/pdd/Downloads/dataset/retinaface/weights/mobilenet0.25_Final.pth",
-                            mobilenet_pretrained="/home/pdd/Downloads/dataset/retinaface/weights/mobilenetV1X0.25_pretrain.tar")
+def task(img_folder, folder_id):
+    output_dir = OUTPUT
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    detector = RetinaDetector(device=device, 
+                            path_to_detector="/root/crop_face_parallel/retinaface/weights/mobilenet0.25_Final.pth",
+                            mobilenet_pretrained="/root/crop_face_parallel/retinaface/weights/mobilenetV1X0.25_pretrain.tar")
     
     live_folder = os.path.join(img_folder, "live")
     spoof_folder = os.path.join(img_folder, "spoof")
 
-    crop_img(live_folder, os.path.join(output_dir, "live"), detector)
-    crop_img(spoof_folder, os.path.join(output_dir, "spoof"), detector)
+    crop_img(live_folder, os.path.join(output_dir, "live"), detector, folder_id)
+    crop_img(spoof_folder, os.path.join(output_dir, "spoof"), detector, folder_id)
 
 
-def main_process(input_dir, output_dir):
-    shutil.rmtree(output_dir, ignore_errors=True)
+def main_process(input_dir, output_dir, parallel=False):
+    global OUTPUT
+    OUTPUT = output_dir
     os.makedirs(output_dir, exist_ok=True)
     os.makedirs(os.path.join(output_dir, "live"), exist_ok=True)
     os.makedirs(os.path.join(output_dir, "spoof"), exist_ok=True)
@@ -68,13 +72,19 @@ def main_process(input_dir, output_dir):
 
     print("Processing...")
     
-    pool = Pool(multiprocessing.cpu_count())
-    pool.map(func=task, iterable=glob.glob(folder_search_path))
-    pool.close()
+    if parallel:
+        pool = Pool(multiprocessing.cpu_count())
+        pool.map(func=task, iterable=glob.glob(folder_search_path))
+        pool.close()
+    else:
+        for folder_id, folder in tqdm.tqdm(enumerate(glob.glob(folder_search_path))):
+            task(folder, folder_id)
     
 
 if __name__=="__main__":
     os.makedirs("./cropped_face", exist_ok=True)
-    for img_folder in tqdm.tqdm(glob.glob("./hello/sub_folder_*[!.tar.gz]"))
+    for img_folder in glob.glob("../hello/sub_folder_*[!.tar.gz]"):
+        print("Processing {}...".format(img_folder.split("/")[-1]))
         out_path = os.path.join("./cropped_face", img_folder.split("/")[-1])
         main_process(img_folder, out_path)
+    # main_process("../hello/sub_folder_0", "./test_crop_face_parallel")

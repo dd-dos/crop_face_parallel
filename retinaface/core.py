@@ -25,10 +25,10 @@ class FaceDetector(object):
                 logger = logging.getLogger(__name__)
                 logger.warning("Detection running on CPU, this may be potentially slow.")
 
-        if 'cpu' not in device and 'cuda' not in device:
-            if verbose:
-                logger.error("Expected values for device are: {cpu, cuda} but got: %s", device)
-            raise ValueError
+        # if 'cpu' not in device or 'cuda' not in device:
+        #     if verbose:
+        #         logger.error("Expected values for device are: {cpu, cuda} but got: %s", device)
+        #     raise ValueError
 
     def detect_from_image(self, tensor_or_path):
         """Detects faces in a given image.
