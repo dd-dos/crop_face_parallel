@@ -36,7 +36,7 @@ def miles_crop(img, bbox):
 
 def crop_img(input_dir, output_dir, detector, folder_id):
     img_search_path = os.path.join(input_dir, "*.jpg")
-    for idx, img_file in enumerate(glob.glob(img_search_path)):
+    for idx, img_file in tqdm.tqdm(enumerate(glob.glob(img_search_path))):
         img = Image.open(img_file)
         bboxes = detector.detect_from_image(np.array(img))
         for box_id, bbox in enumerate(bboxes):
@@ -47,7 +47,7 @@ def crop_img(input_dir, output_dir, detector, folder_id):
                     img_name = input_dir.split("/")[-1] + '_{}.{}.{}.{}.jpg'.format(folder_id, idx, box_id, magic_id)
                     img_save_path = os.path.join(output_dir, img_name)
                     img_crop.save(img_save_path)
-
+                    
 
 def task(img_folder, folder_id):
     output_dir = OUTPUT
@@ -59,7 +59,9 @@ def task(img_folder, folder_id):
     live_folder = os.path.join(img_folder, "live")
     spoof_folder = os.path.join(img_folder, "spoof")
 
+    print("==> Process live folder:")
     crop_img(live_folder, os.path.join(output_dir, "live"), detector, folder_id)
+    print("==> Process spoof folder:")
     crop_img(spoof_folder, os.path.join(output_dir, "spoof"), detector, folder_id)
 
 
@@ -70,8 +72,6 @@ def main_process(input_dir, output_dir, folder_id, parallel=False):
     os.makedirs(os.path.join(output_dir, "live"), exist_ok=True)
     os.makedirs(os.path.join(output_dir, "spoof"), exist_ok=True)
 
-    print("Processing...")
-    
     if parallel:
         pool = Pool(multiprocessing.cpu_count())
         pool.map(func=task, iterable=glob.glob(folder_search_path))
@@ -83,7 +83,7 @@ def main_process(input_dir, output_dir, folder_id, parallel=False):
 if __name__=="__main__":
     os.makedirs("./cropped_face", exist_ok=True)
     for folder_id, img_folder in enumerate(glob.glob("./celebA/sub_folder_*[!.tar.gz]")):
-        print("Processing {}...".format(img_folder.split("/")[-1]))
+        print("=> Process {}:".format(img_folder.split("/")[-1]))
         out_path = os.path.join("./cropped_face", img_folder.split("/")[-1])
         main_process(img_folder, out_path, folder_id)
     # main_process("../hello/sub_folder_0", "./test_crop_face_parallel")
