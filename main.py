@@ -63,14 +63,12 @@ def task(img_folder, folder_id):
     crop_img(spoof_folder, os.path.join(output_dir, "spoof"), detector, folder_id)
 
 
-def main_process(input_dir, output_dir, parallel=False):
+def main_process(input_dir, output_dir, folder_id, parallel=False):
     global OUTPUT
     OUTPUT = output_dir
     os.makedirs(output_dir, exist_ok=True)
     os.makedirs(os.path.join(output_dir, "live"), exist_ok=True)
     os.makedirs(os.path.join(output_dir, "spoof"), exist_ok=True)
-
-    folder_search_path = os.path.join(input_dir, "*") 
 
     print("Processing...")
     
@@ -79,14 +77,13 @@ def main_process(input_dir, output_dir, parallel=False):
         pool.map(func=task, iterable=glob.glob(folder_search_path))
         pool.close()
     else:
-        for folder_id, folder in tqdm.tqdm(enumerate(glob.glob(folder_search_path))):
-            task(folder, folder_id)
+        task(input_dir, folder_id)
     
 
 if __name__=="__main__":
     os.makedirs("./cropped_face", exist_ok=True)
-    for img_folder in glob.glob("./celebA/sub_folder_*[!.tar.gz]"):
+    for folder_id, img_folder in glob.glob("./celebA/sub_folder_*[!.tar.gz]"):
         print("Processing {}...".format(img_folder.split("/")[-1]))
         out_path = os.path.join("./cropped_face", img_folder.split("/")[-1])
-        main_process(img_folder, out_path)
+        main_process(img_folder, out_path, folder_id)
     # main_process("../hello/sub_folder_0", "./test_crop_face_parallel")
