@@ -82,7 +82,7 @@ def main_process(input_dir, output_dir, folder_id, parallel=False):
 
 if __name__=="__main__":
     os.makedirs("./cropped_face", exist_ok=True)
-    for folder_id, img_folder in glob.glob("./celebA/sub_folder_*[!.tar.gz]"):
+    for folder_id, img_folder in enumerate(glob.glob("./celebA/sub_folder_*[!.tar.gz]")):
         print("Processing {}...".format(img_folder.split("/")[-1]))
         out_path = os.path.join("./cropped_face", img_folder.split("/")[-1])
         main_process(img_folder, out_path, folder_id)
