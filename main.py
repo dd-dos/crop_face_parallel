@@ -13,11 +13,13 @@ import time
 import torch
 
 def custom_crop(img, bbox, ratio=1/3):
-    width, height = img.size
-    x1 = int(np.max([0, bbox[0]-width*ratio]))
-    x2 = int(np.min([width, bbox[2]+width*ratio]))
-    y1 = int(np.max([0, bbox[1]-height*ratio]))
-    y2 = int(np.min([height, bbox[3]+height*ratio]))
+    bb_width, bb_height = bbox[2]-bbox[0], bbox[3]-bbox[1]
+    img_width, img_height = img.size
+
+    x1 = int(np.max([0, bbox[0]-bb_width*ratio]))
+    x2 = int(np.min([img_width, bbox[2]+bb_width*ratio]))
+    y1 = int(np.max([0, bbox[1]-bb_height*ratio]))
+    y2 = int(np.min([img_height, bbox[3]+bb_height*ratio]))
 
     return img.crop((x1,y1,x2,y2))
 
