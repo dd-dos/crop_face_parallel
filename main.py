@@ -40,7 +40,7 @@ def crop_img(input_dir, output_dir, detector, folder_id):
         img = Image.open(img_file)
         bboxes = detector.detect_from_image(np.array(img))
         for box_id, bbox in enumerate(bboxes):
-            if bbox[-1] >= 0.8:
+            if bbox[-1] >= 0.95:
                 magic_list = [1/4, 1/14]
                 for magic_id, magic in enumerate(magic_list):
                     img_crop = custom_crop(img, bbox, ratio=magic)
