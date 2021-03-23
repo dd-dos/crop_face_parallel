@@ -51,11 +51,11 @@ def crop_img(input_dir, output_dir, detector, folder_id):
 
 def task(img_folder, folder_id):
     output_dir = OUTPUT
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    detector = RetinaDetector(device=device, 
-                            path_to_detector="/root/crop_face_parallel/retinaface/weights/mobilenet0.25_Final.pth",
-                            mobilenet_pretrained="/root/crop_face_parallel/retinaface/weights/mobilenetV1X0.25_pretrain.tar")
-    
+    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    detector = RetinaDetector(device='cpu', 
+                                path_to_detector="/home/pdd/Desktop/Workspace/crop_face_parallel/retinaface/weights/mobilenet0.25_Final.pth",
+                                mobilenet_pretrained="/home/pdd/Desktop/Workspace/crop_face_parallel/retinaface/weights/mobilenetV1X0.25_pretrain.tar")
+
     live_folder = os.path.join(img_folder, "live")
     spoof_folder = os.path.join(img_folder, "spoof")
 
@@ -83,7 +83,7 @@ def main_process(input_dir, output_dir, folder_id, parallel=False):
 if __name__=="__main__":
     os.makedirs("./cropped_face", exist_ok=True)
     # for folder_id, img_folder in enumerate(glob.glob("./celebA/sub_folder_*[!.tar.gz]")):
-    for folder_id, img_folder in enumerate(glob.glob("./celebA/sub_folder_1")):
+    for folder_id, img_folder in enumerate(glob.glob("./celebA/sub_folder_*")):
         print("=> Process {}:".format(img_folder.split("/")[-1]))
         out_path = os.path.join("./cropped_face", img_folder.split("/")[-1])
         main_process(img_folder, out_path, folder_id)
