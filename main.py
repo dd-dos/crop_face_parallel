@@ -53,8 +53,8 @@ def task(img_folder, folder_id):
     output_dir = OUTPUT
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     detector = RetinaDetector(device='device', 
-                                path_to_detector="/home/pdd/Desktop/Workspace/crop_face_parallel/retinaface/weights/mobilenet0.25_Final.pth",
-                                mobilenet_pretrained="/home/pdd/Desktop/Workspace/crop_face_parallel/retinaface/weights/mobilenetV1X0.25_pretrain.tar")
+                                path_to_detector="./retinaface/weights/mobilenet0.25_Final.pth",
+                                mobilenet_pretrained="./retinaface/weights/mobilenetV1X0.25_pretrain.tar")
 
     live_folder = os.path.join(img_folder, "live")
     spoof_folder = os.path.join(img_folder, "spoof")
