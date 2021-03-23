@@ -41,7 +41,7 @@ def crop_img(input_dir, output_dir, detector, folder_id):
         bboxes = detector.detect_from_image(np.array(img))
         for box_id, bbox in enumerate(bboxes):
             if bbox[-1] >= 0.95:
-                magic_list = [1/4, 1/14]
+                magic_list = [1/4]
                 for magic_id, magic in enumerate(magic_list):
                     img_crop = custom_crop(img, bbox, ratio=magic)
                     img_name = input_dir.split("/")[-1] + '_{}.{}.{}.{}.jpg'.format(folder_id, idx, box_id, magic_id)
@@ -51,8 +51,8 @@ def crop_img(input_dir, output_dir, detector, folder_id):
 
 def task(img_folder, folder_id):
     output_dir = OUTPUT
-    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    detector = RetinaDetector(device='cpu', 
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    detector = RetinaDetector(device='device', 
                                 path_to_detector="/home/pdd/Desktop/Workspace/crop_face_parallel/retinaface/weights/mobilenet0.25_Final.pth",
                                 mobilenet_pretrained="/home/pdd/Desktop/Workspace/crop_face_parallel/retinaface/weights/mobilenetV1X0.25_pretrain.tar")
 
