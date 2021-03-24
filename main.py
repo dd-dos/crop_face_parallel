@@ -36,7 +36,7 @@ def miles_crop(img, bbox):
 
 def crop_img(input_dir, output_dir, detector, folder_id):
     img_search_path = os.path.join(input_dir, "*.jpg")
-    for idx, img_file in tqdm.tqdm(enumerate(glob.glob(img_search_path), 0, len(glob.glob(img_search_path)))):
+    for idx, img_file in tqdm.tqdm(enumerate(glob.glob(img_search_path)), len(glob.glob(img_search_path))):
         img = Image.open(img_file)
         bboxes = detector.detect_from_image(np.array(img))
         for box_id, bbox in enumerate(bboxes):
