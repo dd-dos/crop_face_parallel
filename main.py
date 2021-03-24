@@ -173,7 +173,7 @@ if __name__=="__main__":
     os.makedirs(os.path.join(OUTDIR, "spoof"), exist_ok=True)
 
     dtset = Raw_CelebA_Dataset("./celebA")
-    dataloader = torch.utils.data.DataLoader(dtset, batch_size=128, num_workers=4, collate_fn=custom_collate)
+    dataloader = torch.utils.data.DataLoader(dtset, batch_size=128, num_workers=8, collate_fn=custom_collate)
     for idx, data in tqdm.tqdm(enumerate(dataloader), total=int(np.ceil(len(dtset)/128))):
         imgs, labels, imgs_id = data
         detector = torch.jit.load("./retinaface_torchscript/model/scripted_model.pt")
