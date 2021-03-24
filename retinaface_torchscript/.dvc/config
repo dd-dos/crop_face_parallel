@@ -1,3 +1,0 @@
-['remote "techainer"']
-    url = s3://techainer/models/horus/retinaface
-    endpointurl = https://sgp1.digitaloceanspaces.com

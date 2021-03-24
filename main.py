@@ -6,13 +6,21 @@ import shutil
 from multiprocessing import Pool
 import multiprocessing
 import torch
+import cv2
+import torchvision
 
 from PIL import Image
-from retinaface.retina_detector import RetinaDetector
 import time
 import torch
 
-def custom_crop(img, bbox, ratio=1/3):
+def custom_crop(img, bbox, ratio=1/4):
+    if not isinstance(img, Image.Image):
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        img = Image.fromarray(img)
+
+    if isinstance(bbox, torch.Tensor):
+        bbox = bbox.detach().numpy()
+
     bb_width, bb_height = bbox[2]-bbox[0], bbox[3]-bbox[1]
     img_width, img_height = img.size
 
@@ -34,28 +42,41 @@ def miles_crop(img, bbox):
     return img.crop((x1,y1,x2,y2))
 
 
+# def crop_img(input_dir, output_dir, detector, folder_id):
+#     img_search_path = os.path.join(input_dir, "*.jpg")
+#     tensor_list = [torch.from_numpy(cv2.imread(path)).to(torch.uint8) for path in glob.glob(img_search_path)]
+#     for idx, img_file in tqdm.tqdm(enumerate(glob.glob(img_search_path)), total=len(glob.glob(img_search_path))):
+#         img = Image.open(img_file)
+#         bboxes = detector.detect_from_image(np.array(img))
+#         for box_id, bbox in enumerate(bboxes):
+#             if bbox[-1] >= 0.95:
+#                 magic_list = [1/4]
+#                 for magic_id, magic in enumerate(magic_list):
+#                     img_crop = custom_crop(img, bbox, ratio=magic)
+#                     img_name = '{}.{}.{}.{}.jpg'.format(folder_id, idx, box_id, magic_id)
+#                     img_save_path = os.path.join(output_dir, img_name)
+#                     img_crop.save(img_save_path)
+
+@torch.no_grad()    
 def crop_img(input_dir, output_dir, detector, folder_id):
     img_search_path = os.path.join(input_dir, "*.jpg")
-    for idx, img_file in tqdm.tqdm(enumerate(glob.glob(img_search_path)), total=len(glob.glob(img_search_path))):
-        img = Image.open(img_file)
-        bboxes = detector.detect_from_image(np.array(img))
-        for box_id, bbox in enumerate(bboxes):
+    img_list = [cv2.imread(path) for path in glob.glob(img_search_path)]
+    tensor_list = [torch.from_numpy(img).to(torch.uint8) for img in img_list]
+    batch_res = detector.forward_batch(tensor_list)
+    for res_id, res in enumerate(batch_res):
+        bboxes = res[0]
+        img = img_list[res_id]
+        for bbox_id, bbox in enumerate(bboxes):
             if bbox[-1] >= 0.95:
-                magic_list = [1/4]
-                for magic_id, magic in enumerate(magic_list):
-                    img_crop = custom_crop(img, bbox, ratio=magic)
-                    img_name = '{}.{}.{}.{}.jpg'.format(folder_id, idx, box_id, magic_id)
-                    img_save_path = os.path.join(output_dir, img_name)
-                    img_crop.save(img_save_path)
-                    
+                img_crop = custom_crop(img, bbox)
+                img_name = '{}.{}.{}.jpg'.format(folder_id, res_id, bbox_id)
+                img_save_path = os.path.join(output_dir, img_name)
+                img_crop.save(img_save_path)
+
 
 def task(img_folder, folder_id):
     output_dir = OUTPUT
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    # device='cpu'
-    detector = RetinaDetector(device=device, 
-                                path_to_detector="./retinaface/weights/mobilenet0.25_Final.pth",
-                                mobilenet_pretrained="./retinaface/weights/mobilenetV1X0.25_pretrain.tar")
+    detector = torch.jit.load("./model/scripted_model.pt")
 
     live_folder = os.path.join(img_folder, "*/live")
     spoof_folder = os.path.join(img_folder, "*/spoof")
@@ -90,3 +111,7 @@ if __name__=="__main__":
         main_process(img_folder, out_path, folder_id)
         print("-------------------------")
     # main_process("../hello/sub_folder_0", "./test_crop_face_parallel")
+    # model = torch.jit.load("./weight/scripted_model.pt")
+    # img = [torch.from_numpy(cv2.imread("./sample.jpg")).to(torch.uint8)]
+    # res = model.forward_batch(img)
+    # import ipdb; ipdb.set_trace()
