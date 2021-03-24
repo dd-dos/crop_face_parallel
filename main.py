@@ -60,16 +60,35 @@ def miles_crop(img, bbox):
 @torch.no_grad()    
 def crop_img(input_dir, output_dir, detector, folder_id):
     img_search_path = os.path.join(input_dir, "*.jpg")
-    img_list = [cv2.imread(path) for path in glob.glob(img_search_path)]
+
+    img_path_list = [path for path in glob.glob(img_search_path)]
+    num_batches = int(len(img_path_list)/64)
+
+    for i in tqdm.tqdm(range(num_batches)):
+        img_list = [cv2.imread(path) for path in img_path_list[i:64+i]]
+        tensor_list = [torch.from_numpy(img).to(torch.uint8) for img in img_list]
+
+        batch_res = detector.forward_batch(tensor_list)
+        for res_id, res in enumerate(batch_res):
+            bboxes = res[0]
+            img = img_list[res_id]
+            for bbox_id, bbox in enumerate(bboxes):
+                if bbox[-1] >= 0.95:
+                    img_crop = custom_crop(img, bbox)
+                    img_name = '{}.{}.{}.{}.jpg'.format(i, folder_id, res_id, bbox_id)
+                    img_save_path = os.path.join(output_dir, img_name)
+                    img_crop.save(img_save_path)
+
+    img_list = [cv2.imread(path) for path in img_path_list[num_batches*64:]]
     tensor_list = [torch.from_numpy(img).to(torch.uint8) for img in img_list]
     batch_res = detector.forward_batch(tensor_list)
-    for res_id, res in tqdm.tqdm(enumerate(batch_res), total=len(batch_res)):
+    for res_id, res in enumerate(batch_res):
         bboxes = res[0]
         img = img_list[res_id]
         for bbox_id, bbox in enumerate(bboxes):
             if bbox[-1] >= 0.95:
                 img_crop = custom_crop(img, bbox)
-                img_name = '{}.{}.{}.jpg'.format(folder_id, res_id, bbox_id)
+                img_name = '{}.{}.{}.{}.jpg'.format(num_batches, folder_id, res_id, bbox_id)
                 img_save_path = os.path.join(output_dir, img_name)
                 img_crop.save(img_save_path)
 
