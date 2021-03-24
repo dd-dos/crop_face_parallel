@@ -62,10 +62,10 @@ def crop_img(input_dir, output_dir, detector, folder_id):
     img_search_path = os.path.join(input_dir, "*.jpg")
 
     img_path_list = [path for path in glob.glob(img_search_path)]
-    num_batches = int(len(img_path_list)/64)
+    num_batches = int(len(img_path_list)/128)
 
     for i in tqdm.tqdm(range(num_batches)):
-        img_list = [cv2.imread(path) for path in img_path_list[i:64+i]]
+        img_list = [cv2.imread(path) for path in img_path_list[i:128+i]]
         tensor_list = [torch.from_numpy(img).to(torch.uint8) for img in img_list]
 
         batch_res = detector.forward_batch(tensor_list)
@@ -79,7 +79,7 @@ def crop_img(input_dir, output_dir, detector, folder_id):
                     img_save_path = os.path.join(output_dir, img_name)
                     img_crop.save(img_save_path)
 
-    img_list = [cv2.imread(path) for path in img_path_list[num_batches*64:]]
+    img_list = [cv2.imread(path) for path in img_path_list[num_batches*128:]]
     tensor_list = [torch.from_numpy(img).to(torch.uint8) for img in img_list]
     batch_res = detector.forward_batch(tensor_list)
     for res_id, res in enumerate(batch_res):
