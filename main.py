@@ -63,7 +63,7 @@ def crop_img(input_dir, output_dir, detector, folder_id):
     img_list = [cv2.imread(path) for path in glob.glob(img_search_path)]
     tensor_list = [torch.from_numpy(img).to(torch.uint8) for img in img_list]
     batch_res = detector.forward_batch(tensor_list)
-    for res_id, res in enumerate(batch_res):
+    for res_id, res in tqdm.tqdm(enumerate(batch_res), total=len(batch_res)):
         bboxes = res[0]
         img = img_list[res_id]
         for bbox_id, bbox in enumerate(bboxes):
@@ -74,9 +74,8 @@ def crop_img(input_dir, output_dir, detector, folder_id):
                 img_crop.save(img_save_path)
 
 
-def task(img_folder, folder_id):
+def task(img_folder, folder_id, detector):
     output_dir = OUTPUT
-    detector = torch.jit.load("./model/scripted_model.pt")
 
     live_folder = os.path.join(img_folder, "*/live")
     spoof_folder = os.path.join(img_folder, "*/spoof")
@@ -87,7 +86,7 @@ def task(img_folder, folder_id):
     crop_img(spoof_folder, os.path.join(output_dir, "spoof"), detector, folder_id)
 
 
-def main_process(input_dir, output_dir, folder_id, parallel=False):
+def main_process(input_dir, output_dir, folder_id, detector, parallel=False):
     global OUTPUT
     OUTPUT = output_dir
     os.makedirs(output_dir, exist_ok=True)
@@ -99,17 +98,18 @@ def main_process(input_dir, output_dir, folder_id, parallel=False):
         pool.map(func=task, iterable=glob.glob(folder_search_path))
         pool.close()
     else:
-        task(input_dir, folder_id)
+        task(input_dir, folder_id, detector)
     
 
 if __name__=="__main__":
     os.makedirs("./cropped_face", exist_ok=True)
     # for folder_id, img_folder in enumerate(glob.glob("./celebA/sub_folder_*[!.tar.gz]")):
+    detector = torch.jit.load("./model/scripted_model.pt")
     for folder_id, img_folder in enumerate(glob.glob("./celebA/sub_folder_*")):
         print("=> Process {}:".format(img_folder.split("/")[-1]))
         out_path = os.path.join("./cropped_face", img_folder.split("/")[-1])
-        main_process(img_folder, out_path, folder_id)
-        print("-------------------------")
+        main_process(img_folder, out_path, folder_id, detector)
+        print("====================================================")
     # main_process("../hello/sub_folder_0", "./test_crop_face_parallel")
     # model = torch.jit.load("./weight/scripted_model.pt")
     # img = [torch.from_numpy(cv2.imread("./sample.jpg")).to(torch.uint8)]
