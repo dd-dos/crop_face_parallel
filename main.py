@@ -88,7 +88,7 @@ def crop_img(input_dir, output_dir, detector, folder_id):
         for bbox_id, bbox in enumerate(bboxes):
             if bbox[-1] >= 0.95:
                 img_crop = custom_crop(img, bbox)
-                img_name = '{}.{}.{}.{}.jpg'.format( folder_id, num_batches, res_id, bbox_id)
+                img_name = '{}.{}.{}.{}.jpg'.format(folder_id, num_batches, res_id, bbox_id)
                 img_save_path = os.path.join(output_dir, img_name)
                 img_crop.save(img_save_path)
 
