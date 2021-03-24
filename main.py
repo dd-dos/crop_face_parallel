@@ -44,7 +44,7 @@ def crop_img(input_dir, output_dir, detector, folder_id):
                 magic_list = [1/4]
                 for magic_id, magic in enumerate(magic_list):
                     img_crop = custom_crop(img, bbox, ratio=magic)
-                    img_name = input_dir.split("/")[-1] + '_{}.{}.{}.{}.jpg'.format(folder_id, idx, box_id, magic_id)
+                    img_name = '{}.{}.{}.{}.jpg'.format(folder_id, idx, box_id, magic_id)
                     img_save_path = os.path.join(output_dir, img_name)
                     img_crop.save(img_save_path)
                     
@@ -52,16 +52,17 @@ def crop_img(input_dir, output_dir, detector, folder_id):
 def task(img_folder, folder_id):
     output_dir = OUTPUT
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    detector = RetinaDetector(device='device', 
+    # device='cpu'
+    detector = RetinaDetector(device=device, 
                                 path_to_detector="./retinaface/weights/mobilenet0.25_Final.pth",
                                 mobilenet_pretrained="./retinaface/weights/mobilenetV1X0.25_pretrain.tar")
 
-    live_folder = os.path.join(img_folder, "live")
-    spoof_folder = os.path.join(img_folder, "spoof")
+    live_folder = os.path.join(img_folder, "*/live")
+    spoof_folder = os.path.join(img_folder, "*/spoof")
 
-    print("==> Process live folder:")
+    print("==> Process live imgs:")
     crop_img(live_folder, os.path.join(output_dir, "live"), detector, folder_id)
-    print("==> Process spoof folder:")
+    print("==> Process spoof imgs:")
     crop_img(spoof_folder, os.path.join(output_dir, "spoof"), detector, folder_id)
 
 
@@ -87,4 +88,5 @@ if __name__=="__main__":
         print("=> Process {}:".format(img_folder.split("/")[-1]))
         out_path = os.path.join("./cropped_face", img_folder.split("/")[-1])
         main_process(img_folder, out_path, folder_id)
+        print("-------------------------")
     # main_process("../hello/sub_folder_0", "./test_crop_face_parallel")
