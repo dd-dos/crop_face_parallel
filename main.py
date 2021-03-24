@@ -19,7 +19,7 @@ def custom_crop(img, bbox, ratio=1/4):
         img = Image.fromarray(img)
 
     if isinstance(bbox, torch.Tensor):
-        bbox = bbox.detach().numpy()
+        bbox = bbox.cpu().detach().numpy()
 
     bb_width, bb_height = bbox[2]-bbox[0], bbox[3]-bbox[1]
     img_width, img_height = img.size
