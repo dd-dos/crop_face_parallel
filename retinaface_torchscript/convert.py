@@ -3,7 +3,7 @@ import torch
 from model import RetinaNetDetector
 
 model = RetinaNetDetector()
-model.load_weights('models/mobilenet0.25_Final.pth')
+model.load_weights('model/mobilenet0.25_Final.pth')
 
 img = cv2.imread('sample.png')
 input_tensor = torch.from_numpy(img).to(torch.uint8)
