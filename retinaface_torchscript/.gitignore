@@ -1,0 +1,6 @@
+*.pyc
+*.pth
+*.png
+.vscode/settings.json
+*.pt
+*.json

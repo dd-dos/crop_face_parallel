@@ -5,10 +5,10 @@ import torchvision.models._utils as _utils
 import torch.nn.functional as F
 from collections import OrderedDict
 
-from .net import MobileNetV1 as MobileNetV1
-from .net import FPN as FPN
-from .net import SSH as SSH
-
+from net import MobileNetV1 as MobileNetV1
+from net import FPN as FPN
+from net import SSH as SSH
+from typing import Dict
 
 
 class ClassHead(nn.Module):
@@ -46,45 +46,29 @@ class LandmarkHead(nn.Module):
         return out.view(out.shape[0], -1, 10)
 
 class RetinaFace(nn.Module):
-    def __init__(self, cfg = None, phase = 'train', mobilenet_pretrained=None):
-        """
-        :param cfg:  Network related settings.
-        :param phase: train or test.
-        """
+    def __init__(self):
         super(RetinaFace,self).__init__()
-        self.phase = phase
-        backbone = None
-        if cfg['name'] == 'mobilenet0.25':
-            backbone = MobileNetV1()
-            if cfg['pretrain']:
-                checkpoint = torch.load(mobilenet_pretrained, map_location=torch.device('cpu'))
-                from collections import OrderedDict
-                new_state_dict = OrderedDict()
-                for k, v in checkpoint['state_dict'].items():
-                    name = k[7:]  # remove module.
-                    new_state_dict[name] = v
-                # load params
-                backbone.load_state_dict(new_state_dict)
-        elif cfg['name'] == 'Resnet50':
-            import torchvision.models as models
-            backbone = models.resnet50(pretrained=cfg['pretrain'])
+        backbone = MobileNetV1()
 
-        self.body = _utils.IntermediateLayerGetter(backbone, cfg['return_layers'])
-        in_channels_stage2 = cfg['in_channel']
+        # NOTE: IntermediateLayerGetter expect Dict[str, str] for return_layers
+        layer_config: Dict[str, str] = {'stage1': "1", 'stage2': "2", 'stage3': "3"}
+        self.body = _utils.IntermediateLayerGetter(
+            backbone, layer_config)
+        in_channels_stage2: int = 32
         in_channels_list = [
             in_channels_stage2 * 2,
             in_channels_stage2 * 4,
             in_channels_stage2 * 8,
         ]
-        out_channels = cfg['out_channel']
+        out_channels = 64
         self.fpn = FPN(in_channels_list,out_channels)
         self.ssh1 = SSH(out_channels, out_channels)
         self.ssh2 = SSH(out_channels, out_channels)
         self.ssh3 = SSH(out_channels, out_channels)
 
-        self.ClassHead = self._make_class_head(fpn_num=3, inchannels=cfg['out_channel'])
-        self.BboxHead = self._make_bbox_head(fpn_num=3, inchannels=cfg['out_channel'])
-        self.LandmarkHead = self._make_landmark_head(fpn_num=3, inchannels=cfg['out_channel'])
+        self.ClassHead = self._make_class_head(fpn_num=3, inchannels=64)
+        self.BboxHead = self._make_bbox_head(fpn_num=3, inchannels=64)
+        self.LandmarkHead = self._make_landmark_head(fpn_num=3, inchannels=64)
 
     def _make_class_head(self,fpn_num=3,inchannels=64,anchor_num=2):
         classhead = nn.ModuleList()
@@ -116,12 +100,23 @@ class RetinaFace(nn.Module):
         feature3 = self.ssh3(fpn[2])
         features = [feature1, feature2, feature3]
 
-        bbox_regressions = torch.cat([self.BboxHead[i](feature) for i, feature in enumerate(features)], dim=1)
-        classifications = torch.cat([self.ClassHead[i](feature) for i, feature in enumerate(features)],dim=1)
-        ldm_regressions = torch.cat([self.LandmarkHead[i](feature) for i, feature in enumerate(features)], dim=1)
+        # bbox_regressions
+        bbox_regressions = []
+        for index, box_head_layer in enumerate(self.BboxHead):
+            bbox_regressions.append(box_head_layer(features[index]))
+        bbox_regressions = torch.cat(bbox_regressions, dim=1)
 
-        if self.phase == 'train':
-            output = (bbox_regressions, classifications, ldm_regressions)
-        else:
-            output = (bbox_regressions, F.softmax(classifications, dim=-1), ldm_regressions)
+        # classifications
+        classifications = []
+        for index, class_head_layer in enumerate(self.ClassHead):
+            classifications.append(class_head_layer(features[index]))
+        classifications = torch.cat(classifications, dim=1)
+
+        # ldm_regressions
+        ldm_regressions = []
+        for index, landmark_head_layer in enumerate(self.LandmarkHead):
+            ldm_regressions.append(landmark_head_layer(features[index]))
+        ldm_regressions = torch.cat(ldm_regressions, dim=1)
+
+        output = (bbox_regressions, F.softmax(classifications, dim=-1), ldm_regressions)
         return output
