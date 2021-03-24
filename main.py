@@ -178,7 +178,7 @@ if __name__=="__main__":
         imgs, labels, imgs_id = data
         detector = torch.jit.load("./retinaface_torchscript/model/scripted_model.pt")
         with torch.no_grad():
-            batch_res = detector.forward_batch(imgs)
+            batch_res = detector.forward_batch(imgs).cpu().numpy()
 
         # pool = Pool(multiprocessing.cpu_count())
         pool = Pool(multiprocessing.cpu_count())
