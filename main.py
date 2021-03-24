@@ -183,7 +183,7 @@ if __name__=="__main__":
 
         # pool = Pool(multiprocessing.cpu_count())
         pool = Pool(multiprocessing.cpu_count())
-        bag = [[batch_res[i], imgs[i], labels[i], imgs_id[i]] for i in range(len(imgs))]
+        bag = [[batch_res[i].numpy(), imgs[i], labels[i], imgs_id[i]] for i in range(len(imgs))]
         pool.map(func=task, iterable=bag)
         pool.close()
 
