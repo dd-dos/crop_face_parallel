@@ -9,16 +9,16 @@ img = cv2.imread('sample.png')
 input_tensor = torch.from_numpy(img).to(torch.uint8)
 
 with torch.no_grad():
-    res = model.forward(input_tensor)
-    print(res)
-    print('=============================')
+    # res = model.forward(input_tensor)
+    # print(res)
+    # print('=============================')
 
     # scripted_model = torch.jit.script(model.model)
     scripted_model = torch.jit.script(model)
-    scripted_model.save('models/scripted_model.pt')
+    scripted_model.save('model/scripted_model.pt')
 
-    res = scripted_model.forward(input_tensor)
-    print(res)
+    # res = scripted_model.forward(input_tensor)
+    # print(res)
 
     # print("Start trace")
     # traced_model = torch.jit.trace(model, img)

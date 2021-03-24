@@ -123,7 +123,7 @@ def main_process(input_dir, output_dir, folder_id, detector, parallel=False):
 if __name__=="__main__":
     os.makedirs("./cropped_face", exist_ok=True)
     # for folder_id, img_folder in enumerate(glob.glob("./celebA/sub_folder_*[!.tar.gz]")):
-    detector = torch.jit.load("./model/scripted_model.pt")
+    detector = torch.jit.load("./retinaface_torchscript/model/scripted_model.pt")
     for folder_id, img_folder in enumerate(glob.glob("./celebA/sub_folder_*")):
         print("=> Process {}:".format(img_folder.split("/")[-1]))
         out_path = os.path.join("./cropped_face", img_folder.split("/")[-1])
