@@ -8,6 +8,9 @@ import multiprocessing
 import torch
 import cv2
 import torchvision
+import time
+import torch.multiprocessing
+torch.multiprocessing.set_sharing_strategy('file_system')
 
 from PIL import Image
 import time
@@ -33,7 +36,7 @@ def custom_crop(img, bbox, ratio=1/4):
 
 
 class Raw_CelebA_Dataset(torch.utils.data.Dataset):
-    def __init__(self, root, image_size=448):
+    def __init__(self, root):
         img_list = glob.glob(os.path.join(root, "*/*/*/*.jpg"))
         self.dataset = []
         for img in img_list:
@@ -85,19 +88,29 @@ if __name__=="__main__":
     os.makedirs(os.path.join(OUTDIR, "spoof"), exist_ok=True)
 
     dtset = Raw_CelebA_Dataset("./celebA")
-    dataloader = torch.utils.data.DataLoader(dtset, batch_size=128, num_workers=4, collate_fn=custom_collate)
+    dataloader = torch.utils.data.DataLoader(dtset, batch_size=64, num_workers=16, collate_fn=custom_collate, pin_memory=True)
     with torch.no_grad():
-        for idx, data in tqdm.tqdm(enumerate(dataloader), total=int(np.ceil(len(dtset)/128))):
+        detector = torch.jit.load("./retinaface_torchscript/model/scripted_model.pt")
+        for idx, data in tqdm.tqdm(enumerate(dataloader), total=int(np.ceil(len(dtset)/64))):
             imgs, labels, imgs_id = data
-            detector = torch.jit.load("./retinaface_torchscript/model/scripted_model.pt")
+            t = time.time()
             batch_res = detector.forward_batch(imgs)
+            print("Process bboxes took {}".format(time.time()-t))
+
             bbox_list = [batch_res[i][0] for i in range(len(batch_res))]
             bbox_list = [[bbox.cpu().numpy() for bbox in bbox_list[i]] for i in range(len(bbox_list))]
 
-            pool = Pool(multiprocessing.cpu_count())
+            # t = time.time() 
+            # pool = Pool(multiprocessing.cpu_count())
+            # bag = [(bbox_list[i], imgs[i], labels[i], imgs_id[i]) for i in range(len(imgs))]
+            # pool.map(func=task, iterable=bag)
+            # pool.close()
+            # print("Multiprocessing img took {}".format(time.time()-t))
+            t = time.time() 
             bag = [(bbox_list[i], imgs[i], labels[i], imgs_id[i]) for i in range(len(imgs))]
-            pool.map(func=task, iterable=bag)
-            pool.close()
+            for item in bag:
+                task(item)
+            print("Processing img took {}".format(time.time()-t))
 
 
 
