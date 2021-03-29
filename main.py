@@ -91,7 +91,7 @@ def task(bag):
 
 
 if __name__=="__main__":
-    batch_size = 16
+    batch_size = 64
     OUTDIR = "./cropped_face"
     shutil.rmtree(OUTDIR, ignore_errors=True)
     os.makedirs(OUTDIR, exist_ok=True)
