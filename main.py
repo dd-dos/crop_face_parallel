@@ -50,8 +50,8 @@ class Raw_CelebA_Dataset(torch.utils.data.Dataset):
 
     def __getitem__(self, idx):
         image_path, label = self.dataset[idx]
-        img = torch.from_numpy(cv2.imread(image_path)).to(torch.uint8)
-        return img, label, idx
+        img_tensor = torch.from_numpy(cv2.imread(image_path)).to(torch.uint8)
+        return img_tensor, label, idx
 
 
 def custom_collate(batch):
@@ -69,18 +69,29 @@ def custom_collate(batch):
 def task(bag):
     global OUTDIR
     bboxes, img, label, img_id = bag
-    for bbox_id, bbox in enumerate(bboxes):
-        if bbox[-1] >= 0.96:
-            img_crop = custom_crop(img, bbox)
-            img_name = '{}.{}.jpg'.format(img_id, bbox_id)
-            if label=="live":
-                outdir = os.path.join(OUTDIR, "live")
-            elif label=="spoof":
-                outdir = os.path.join(OUTDIR, "spoof")
-            img_save_path = os.path.join(outdir, img_name)
-            img_crop.save(img_save_path)
+    if len(bboxes)==0:
+        return 
+
+    sizes = []
+    for box_id in range(len(bboxes)):
+        bbox = bboxes[box_id]
+        sizes.append((bbox[2]-bbox[0])*(bbox[3]-bbox[1]))
+
+    biggest_id = np.argmax(np.array(sizes))
+
+    if bboxes[biggest_id][-1] >= 0.96 and sizes[biggest_id] > 224*224:
+        img_crop = custom_crop(img, bboxes[biggest_id])
+        img_name = '{}.jpg'.format(img_id)
+        if label=="live":
+            outdir = os.path.join(OUTDIR, "live")
+        elif label=="spoof":
+            outdir = os.path.join(OUTDIR, "spoof")
+        img_save_path = os.path.join(outdir, img_name)
+        img_crop.save(img_save_path)
+
 
 if __name__=="__main__":
+    batch_size = 16
     OUTDIR = "./cropped_face"
     shutil.rmtree(OUTDIR, ignore_errors=True)
     os.makedirs(OUTDIR, exist_ok=True)
@@ -88,29 +99,29 @@ if __name__=="__main__":
     os.makedirs(os.path.join(OUTDIR, "spoof"), exist_ok=True)
 
     dtset = Raw_CelebA_Dataset("./celebA")
-    dataloader = torch.utils.data.DataLoader(dtset, batch_size=64, num_workers=16, collate_fn=custom_collate, pin_memory=True)
+    dataloader = torch.utils.data.DataLoader(dtset, batch_size=batch_size, num_workers=8, collate_fn=custom_collate, pin_memory=True)
     with torch.no_grad():
         detector = torch.jit.load("./retinaface_torchscript/model/scripted_model.pt")
-        for idx, data in tqdm.tqdm(enumerate(dataloader), total=int(np.ceil(len(dtset)/64))):
+        for idx, data in tqdm.tqdm(enumerate(dataloader), total=int(np.ceil(len(dtset)/batch_size))):
             imgs, labels, imgs_id = data
-            t = time.time()
+            # t = time.time()
             batch_res = detector.forward_batch(imgs)
-            print("Process bboxes took {}".format(time.time()-t))
+            # print("Process bboxes took {}".format(time.time()-t))
 
             bbox_list = [batch_res[i][0] for i in range(len(batch_res))]
             bbox_list = [[bbox.cpu().numpy() for bbox in bbox_list[i]] for i in range(len(bbox_list))]
 
             # t = time.time() 
-            # pool = Pool(multiprocessing.cpu_count())
-            # bag = [(bbox_list[i], imgs[i], labels[i], imgs_id[i]) for i in range(len(imgs))]
-            # pool.map(func=task, iterable=bag)
-            # pool.close()
-            # print("Multiprocessing img took {}".format(time.time()-t))
-            t = time.time() 
+            pool = Pool(multiprocessing.cpu_count())
             bag = [(bbox_list[i], imgs[i], labels[i], imgs_id[i]) for i in range(len(imgs))]
-            for item in bag:
-                task(item)
-            print("Processing img took {}".format(time.time()-t))
+            pool.map(func=task, iterable=bag)
+            pool.close()
+            # print("Multiprocessing img took {}".format(time.time()-t))
+            # t = time.time() 
+            # bag = [(bbox_list[i], imgs[i], labels[i], imgs_id[i]) for i in range(len(imgs))]
+            # for item in bag:
+            #     task(item)
+            # print("Processing img took {}".format(time.time()-t))
 
 
 
