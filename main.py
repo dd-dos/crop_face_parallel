@@ -37,7 +37,7 @@ def custom_crop(img, bbox, ratio=1/4):
 
 class Raw_CelebA_Dataset(torch.utils.data.Dataset):
     def __init__(self, root):
-        img_list = glob.glob(os.path.join(root, "*/*/*/*.(jpg|png)"))
+        img_list = glob.glob(os.path.join(root, "*/*/*.jpg")) + glob.glob(os.path.join(root, "*/*/*.png"))
         self.dataset = []
         for img in img_list:
             if "live" in img:
@@ -81,7 +81,7 @@ def task(bag):
 
     if bboxes[biggest_id][-1] >= 0.96 and sizes[biggest_id] > 224*224:
         img_crop = custom_crop(img, bboxes[biggest_id])
-        img_name = '{}.jpg'.format(img_id)
+        img_name = 'test.{}.jpg'.format(img_id)
         if label=="live":
             outdir = os.path.join(OUTDIR, "live")
         elif label=="spoof":
