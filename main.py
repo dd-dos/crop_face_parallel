@@ -37,7 +37,7 @@ def custom_crop(img, bbox, ratio=1/4):
 
 class Raw_CelebA_Dataset(torch.utils.data.Dataset):
     def __init__(self, root):
-        img_list = glob.glob(os.path.join(root, "*/*/*.jpg"))
+        img_list = glob.glob(os.path.join(root, "*/*/*/*.(jpg|png)"))
         self.dataset = []
         for img in img_list:
             if "live" in img:
