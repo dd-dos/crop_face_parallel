@@ -98,7 +98,7 @@ if __name__=="__main__":
     os.makedirs(os.path.join(OUTDIR, "live"), exist_ok=True)
     os.makedirs(os.path.join(OUTDIR, "spoof"), exist_ok=True)
 
-    dtset = Raw_CelebA_Dataset("./celebA")
+    dtset = Raw_CelebA_Dataset("./CelebA")
     dataloader = torch.utils.data.DataLoader(dtset, batch_size=batch_size, num_workers=8, collate_fn=custom_collate, pin_memory=True)
     with torch.no_grad():
         detector = torch.jit.load("./retinaface_torchscript/model/scripted_model.pt")
