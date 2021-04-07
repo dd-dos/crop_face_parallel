@@ -11,6 +11,7 @@ import torchvision
 import time
 import torch.multiprocessing
 torch.multiprocessing.set_sharing_strategy('file_system')
+import random
 
 from PIL import Image
 import time
@@ -79,9 +80,11 @@ def task(bag):
 
     biggest_id = np.argmax(np.array(sizes))
 
-    if bboxes[biggest_id][-1] >= 0.96 and sizes[biggest_id] > 224*224:
-        img_crop = custom_crop(img, bboxes[biggest_id])
-        img_name = '{}.jpg'.format(img_id)
+    box = bboxes[biggest_id]
+    if box[-1] >= 0.96 and sizes[biggest_id] > 224*224:
+        ratio = random.choice([1/4, 1/8])
+        img_crop = custom_crop(img, box, ratio)
+        img_name = '{}_{}_{}_{}_{}.jpg'.format(img_id, box[0], box[1], box[2], box[3])
         if label=="live":
             outdir = os.path.join(OUTDIR, "live")
         elif label=="spoof":
