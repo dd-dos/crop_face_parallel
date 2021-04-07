@@ -38,7 +38,7 @@ def custom_crop(img, bbox, ratio=1/4):
 
 class Raw_CelebA_Dataset(torch.utils.data.Dataset):
     def __init__(self, root):
-        img_list = glob.glob(os.path.join(root, "*/*/*/*.jpg"))
+        img_list = glob.glob(os.path.join(root, "*/*/*.jpg")) + glob.glob(os.path.join(root, "*/*/*.png"))
         self.dataset = []
         for img in img_list:
             if "live" in img:
@@ -101,7 +101,7 @@ if __name__=="__main__":
     os.makedirs(os.path.join(OUTDIR, "live"), exist_ok=True)
     os.makedirs(os.path.join(OUTDIR, "spoof"), exist_ok=True)
 
-    dtset = Raw_CelebA_Dataset("./celebA")
+    dtset = Raw_CelebA_Dataset("./CelebA")
     dataloader = torch.utils.data.DataLoader(dtset, batch_size=batch_size, num_workers=8, collate_fn=custom_collate, pin_memory=True)
     with torch.no_grad():
         detector = torch.jit.load("./retinaface_torchscript/model/scripted_model.pt")
